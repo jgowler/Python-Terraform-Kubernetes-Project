@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# Update the system
+sudo apt-get update && sudo apt-get upgrade -y
+
+# Install Docker
+echo "Installing Docker..."
+sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+sudo apt-get update && sudo apt-get install -y docker-ce
+
+# Install k3s with specified permissions for kubeconfig
+echo "Installing k3s..."
+sudo curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644
+
+# Verify k3s installation
+sudo k3s kubectl get nodes
+
+# Add a taint to the controller node to prevent pods from being scheduled on it
+sudo k3s kubectl taint nodes $(hostname) dedicated=controller:NoSchedule
+
+echo "Controller node installation complete."
+
+# Add current user to Docker group
+sudo usermod -aG docker $USER
