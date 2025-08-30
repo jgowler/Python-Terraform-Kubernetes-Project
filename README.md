@@ -11,68 +11,126 @@
 
 ---
 
-## How I set up the K3s nodes:
+## How I set up the K8s nodes:
 1. Created 2 Linux Server VM's (Ubuntu Server 24.04.3).
 2. Ran the following script on the Master node:
 ```bash
 #!/bin/bash
 
-# Update the system
-sudo apt-get update && sudo apt-get upgrade -y
+### Set up containerd:
+sudo apt update
+sudo apt-get install -y containerd
 
-# Install Docker
-echo "Installing Docker..."
-sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-sudo apt-get update && sudo apt-get install -y docker-ce
+# create /etc/containerd directory for containerd configuration
+sudo mkdir -p /etc/containerd
 
-# Install k3s with specified permissions for kubeconfig
-echo "Installing k3s..."
-sudo curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644
+# Generate the default containerd configuration
+containerd config default \
+| sed 's/SystemdCgroup = false/SystemdCgroup = true/' \
+| sed 's|sandbox_image = ".*"|sandbox_image = "registry.k8s.io/pause:3.10"|' \
+| sudo tee /etc/containerd/config.toml > /dev/null
 
-# Verify k3s installation
-sudo k3s kubectl get nodes
+# Restart containerd to apply the configuration changes
+sudo systemctl restart containerd
 
-# Add a taint to the controller node to prevent pods from being scheduled on it
-sudo k3s kubectl taint nodes $(hostname) dedicated=controller:NoSchedule
+# disable swap
+sudo swapoff -a
 
-echo "Controller node installation complete."
+### Kubeadm, kubelet, and kubectl:
+sudo apt update
 
-# Add current user to Docker group
-sudo usermod -aG docker $USER
-```
-3. Set up the Worker node using the following. The IP address and token from the Master node will need to provided before running:
-```bash
-#!/bin/bash
+# install apt-transport-https ca-certificates curl and gpg packages using 
+sudo apt-get install -y apt-transport-https ca-certificates curl gpg
 
-# Update the system
-sudo apt-get update && sudo apt-get upgrade -y
+# create a secure directory for storing GPG keyring files 
+sudo mkdir -p -m 755 /etc/apt/keyrings
 
-# Install Docker
-echo "Installing Docker..."
-sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-sudo apt-get update && sudo apt-get install -y docker-ce
+# download the k8s release gpg key FOR 1.33
+sudo curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.33/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
-# Replace <controller-ip> with the IP address of your controller node
-# Replace <token> with the token from your controller node
-CONTROLLER_IP=<controller-ip>
-TOKEN=<token>
 
-# Install k3s agent and join the cluster
-echo "Installing k3s agent..."
-sudo curl -sfL https://get.k3s.io | K3S_URL=https://${CONTROLLER_IP}:6443 K3S_TOKEN=${TOKEN} sh -
+# Download and convert the Kubernetes APT repository's GPG public key into
+# a binary format (`.gpg`) that APT can use to verify the integrity
+# and authenticity of Kubernetes packages during installation. 
+# This overwrites any existing configuration in 
+# /etc/apt/sources.list.d/kubernetes.list FOR 1.33 
+# (`tee` without `-a` (append) will **replace** the contents of the file)
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.33/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
-# Verify the worker node is connected
-sudo k3s kubectl get nodes
+# update packages in apt 
+sudo apt-get update
 
-# Ensure firewall rules allow traffic to NodePort services
-# (Adjust the port range as needed)
-sudo ufw allow 30000:32767/tcp
+apt-cache madison kubelet
+apt-cache madison kubectl
+apt-cache madison kubeadm
 
-echo "Worker node installation complete."
+# After running the above select the version of each and assign to the below environment variable:
+KUBE_VERSION="1.33.2-1.1"
+
+# install kubelet, kubeadm, and kubectl at version 1.33.2-1.1
+sudo apt-get install -y kubelet=$KUBE_VERSION kubeadm=$KUBE_VERSION kubectl=$KUBE_VERSION
+
+# hold these packages at version if you wish
+sudo apt-mark hold kubelet kubeadm kubectl
+
+### Enable IP forwarding:
+# enable IP packet forwarding on the node, which allows the Linux kernel 
+# to route network traffic between interfaces. 
+# This is essential in Kubernetes for pod-to-pod communication 
+# across nodes and for routing traffic through the control plane
+# or CNI-managed networks
+sudo sysctl -w net.ipv4.ip_forward=1
+
+# uncomment the line in /etc/sysctl.conf enabling IP forwarding after reboot
+sudo sed -i '/^#net\.ipv4\.ip_forward=1/s/^#//' /etc/sysctl.conf
+
+# Apply the changes to sysctl.conf
+# Any changes made to sysctl configuration files take immediate effect without requiring a reboot
+sudo sysctl -p
+
+########################################
+# ⚠️ WARNING ONLY ON THE CONTROL PLANE #
+#######################################
+# Initialize the cluster specifying containerd as the container runtime, ensuring that the --cri-socket argument includes the unix:// prefix
+# containerd.sock is a Unix domain socket used by containerd
+# The Unix socket mechanism is a method for inter-process communication (IPC) on the same host.
+sudo kubeadm init --pod-network-cidr=192.168.0.0/16 --cri-socket=unix:///run/containerd/containerd.sock
+
+## After this step the join command will be shown on screen along with the below information:
+
+# ONLY ON CONTROL PLANE (also in the output of 'kubeadm init' command)
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+########################################
+# HOW TO RESET IF NEEDED
+# sudo kubeadm reset --cri-socket=unix:///run/containerd/containerd.sock
+# sudo rm -rf /etc/kubernetes /var/lib/etcd
+########################################
+
+# Node will show as NotReady, set up either Flannel or Calico to resolve this:
+
+# Flannel:
+# ONLY FOR FLANNEL: Load `br_netfilter` and enable bridge networking
+# ONLY FOR FLANNEL: echo "br_netfilter" | sudo tee /etc/modules-load.d/br_netfilter.conf
+# install flannel
+# kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+
+
+# Calico:
+# install calico
+kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico.yaml
+
+
+
+# Install the Tigera Calico CNI operator and custom resource definitions
+# kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/tigera-operator.yaml
+
+# Install Calico CNI by creating the necessary custom resource
+# kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/custom-resources.yaml
+
+
 ```
 4. Set up SSH keys to each VM:
 `(Local to Master node) ssh-keygen -t ed25519 -C PC-to-K8sMaster -f pc-to-master`
