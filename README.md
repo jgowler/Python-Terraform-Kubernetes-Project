@@ -142,4 +142,6 @@ The same was done for the Worker node, changing relevent information.
 
 ## What is next?
 
+[Create the Python Flask application](https://github.com/jgowler/Python-Terraform-Kubernetes-Project/tree/main/Python-Files)
+
 With the nodes set up the next objective will be to create the first iteration of the Flask application. This will be tested using Docker locally once the Dockerfile is created and a Docker image is ready.

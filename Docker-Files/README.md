@@ -1,4 +1,4 @@
-# Create Dockerfile, Dockerimage, Test, upload to Dockerhub
+# Create Dockerfile, Docker image, Test, upload to Dockerhub
 
 1. After getting all the files together the next step was to set up the creation of the Docker image using a Dockerfile:
 
