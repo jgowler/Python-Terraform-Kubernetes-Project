@@ -35,4 +35,5 @@ CMD ["python", "main.py"]
 
 `docker push flask-users-app jgowler/flask-users-app:latest`
 
+[On to Kubernetes](https://github.com/jgowler/Python-Terraform-Kubernetes-Project/tree/main/Kubernetes-Files)
 Now that the image is created, tested, and uploaded the next step would be to run a test deployment using this image in Kubernetes.
