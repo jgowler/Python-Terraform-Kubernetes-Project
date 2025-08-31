@@ -2,7 +2,8 @@
 
 1. After getting all the files together the next step was to set up the creation of the Docker image using a Dockerfile:
 
-```FROM python:3.12-slim
+```
+FROM python:3.12-slim
 
 WORKDIR /app/
 
@@ -15,7 +16,8 @@ COPY . .
 
 EXPOSE 5000
 
-CMD ["python", "main.py"]```
+CMD ["python", "main.py"]
+```
 
 2. Build the Docker image using the following command:
 
