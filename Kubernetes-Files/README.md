@@ -45,4 +45,4 @@ The above deployment will create the app in two containers, and have them access
 
 Once the containers were up in Kubernetes I tested by accessing the app via the nodePort service created in the deployment yaml file. At this time I only have one Master node and one Worker node and accessing the app from within the LAN, so i was able to access it using the node IP address:30080.
 
-[With the app working from within Kubernetes the next step is to deploy using Terraform]()
+[With the app working from within Kubernetes the next step is to deploy using Terraform](https://github.com/jgowler/Python-Terraform-Kubernetes-Project/tree/main/Terraform-Files)
