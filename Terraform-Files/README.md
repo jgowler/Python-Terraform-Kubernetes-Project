@@ -34,7 +34,7 @@ To get the information needed to inpput into the variables for the connection I 
 
 From here, just copy and paste the information required.
 
-<span style="color:red">## NOTE: The values in the above are defined in the variables.tf file, but are overwritten by the terraform.tfvars file at the planning and deployment phase.</span>
+<span style="color:red">NOTE: The values in the above are defined in the variables.tf file, but are overwritten by the terraform.tfvars file at the planning and deployment phase.</span>
 
 ## 2. Plan and Deploy
 
