@@ -1,4 +1,4 @@
-# Project: Create a Python Flask app hosted in K3s deployed using Terraform
+# Project: Create a Python Flask app hosted in Kubernetes deployed using Terraform
 
 ---
 
@@ -6,8 +6,8 @@
 1. To set up a Master and Worker node on VM's - Complete, one Master node and one Worker node
 2. Create a Python Flask application to return some information in response to a GET command (build upon this to include other requests)
 3. Create a Dockerfile and use this to create the Docker image to deploy to cluster.
-4. Write the Terraform script to deploy the above image to be run from the Worker node.
-5. Create a Python app that uses Requests (or httpx) to send GET requests to the app hosted in Kubernetes.
+4. Write the Kubernetes files to deploy the above image to be run from the Worker node.
+5. Create the Terraform deployment to deploy the app remotely using variables defined.
 
 ---
 
