@@ -115,7 +115,7 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 # ONLY FOR FLANNEL: Load `br_netfilter` and enable bridge networking
 # ONLY FOR FLANNEL: echo "br_netfilter" | sudo tee /etc/modules-load.d/br_netfilter.conf
 # install flannel
-# kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
 
 
 # Calico:
