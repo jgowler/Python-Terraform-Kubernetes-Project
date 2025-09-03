@@ -133,10 +133,12 @@ kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/
 
 ```
 4. Set up SSH keys to each VM:
+
 `(Local to Master node) ssh-keygen -t ed25519 -C PC-to-K8sMaster -f pc-to-master`
 `(Local to Master node) ssh-copy-id -i pc-to-master.pub <user>@<nodeipaddress>`
 The same was done for the Worker node, changing relevent information.
-5. Checked that the Worker node could be seen from the Master node by running `kubectl get nodes` and seeing it listed there.
+
+6. Checked that the Worker node could be seen from the Master node by running `kubectl get nodes` and seeing it listed there.
 
 ---
 
