@@ -27,7 +27,7 @@ CMD ["python", "main.py"]
 
 `docker run -p 5000:5000 flask-users-app`
 
-4. Logged in to DOckerhub ready to upload the image to my repository. First needed to tag it:
+4. Logged in to Dockerhub ready to upload the image to my repository. First needed to tag it:
 
 `docker tag flask-users-app jgowler/flask-users-app:latest`
 
