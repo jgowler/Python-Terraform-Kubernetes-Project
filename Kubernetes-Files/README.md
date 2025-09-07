@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: flask-users-app
-          image: jgowler/flask-users-app:latest
+          image: jgowler/flask-users-app:1.0
           ports:
             - containerPort: 5000
 ---
